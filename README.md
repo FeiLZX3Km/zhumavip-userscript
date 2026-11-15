@@ -1,6 +1,6 @@
 # 竹马法考 · 解析页增强脚本
 
-给竹马法考（www.zhumavip.com）与众合教育（www.zhongheschool.com）的解析页做界面增强的用户脚本。纯前端运行：不请求外部接口、不上传任何数据、不加载远程代码、不改动站点业务数据。
+给[竹马法考](https://www.zhumavip.com/)与[众合教育](https://www.zhongheschool.com/)的解析页做界面增强的用户脚本。纯前端运行：不请求外部接口、不上传任何数据、不加载远程代码、不改动站点业务数据。
 
 | 项目 | 内容 |
 | --- | --- |
@@ -22,13 +22,39 @@
 8. 报告页面包屑修复：返回该部门法的练习目录页，而不是统一跳回题库首页。
 9. 分屏左栏长题干全文：解除题干与选项区的定高、行数与溢出限制，题干自然撑高、下方选项随之下移；展开按钮在原件隐藏态仍可触发。
 
-## 安装
+## 安装与导入教程
 
-- **从 GitHub 直装**：打开本仓库根目录 `zhumavip-expand.user.js` 的 raw 地址，用户脚本管理器会弹出安装确认。
-- **从 Greasy Fork 安装**：打开 https://greasyfork.org/zh-CN/scripts/605587 ，点页面上的绿色安装按钮。脚本页与本仓库通过同步源关联，仓库更新后站点会定期拉取。
-- **从本地文件安装**：把 `.user.js` 拖进浏览器窗口，或在管理器的编辑器里粘贴全文后保存。
+分两步：先装用户脚本管理器（俗称“油猴”），再把 `.user.js` 导入进去。以下以 Tampermonkey 为例；Violentmonkey、ScriptCat 同样可用，脚本只申请了 `GM_registerMenuCommand` 一个权限。
 
-装好后，页面标签标题开头会显示 `v3.17.3 | ...`，这是脚本自己写入的版本标记，可据此确认新版已生效。
+### 第一步：安装 Tampermonkey
+
+| 浏览器 | 安装入口 |
+| --- | --- |
+| Chrome、Edge、Brave 等 Chromium 系 | [Chrome 网上应用店](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) 或 [Edge 加载项商店](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd) |
+| Firefox | [Firefox 附加组件](https://addons.mozilla.org/zh-CN/firefox/addon/tampermonkey/) |
+| Safari | 按 [Tampermonkey 官网](https://www.tampermonkey.net/) 的 Safari 说明安装 |
+
+浏览器会提示“添加扩展”“读取和更改网站数据”，这是用户脚本的正常工作方式，确认即可。装完建议把扩展图标固定到工具栏，菜单命令要从这里点。
+
+若应用商店打不开：到 [Tampermonkey 官网](https://www.tampermonkey.net/) 下载扩展包，在 `chrome://extensions` 打开开发者模式，用“加载已解压的扩展程序”导入；或改用 Edge 加载项商店装同一个扩展。
+
+### 第二步：导入脚本
+
+三条路任选其一，推荐第一条。
+
+1. **Greasy Fork 一键安装（推荐）**：打开[脚本页](https://greasyfork.org/zh-CN/scripts/605587)，点绿色的“安装此脚本”，扩展会弹出确认页，核对名称、版本与两个 `@match` 后点安装。脚本页绑定了本仓库的同步源，日后仓库升版本会自动更新。
+2. **GitHub raw 直装**：打开[本仓库脚本的 raw 地址](https://raw.githubusercontent.com/FeiLZX3Km/zhumavip-userscript/main/zhumavip-expand.user.js)，扩展识别到 `.user.js` 会弹出安装页，确认即可。
+3. **本地文件导入**：下载仓库根目录的 `zhumavip-expand.user.js`，然后二选一：
+   - 把文件拖进浏览器窗口，扩展会捕获并弹出安装页；
+   - 点扩展图标 → 管理面板 → 加号新建脚本 → 全选粘贴脚本全文 → 保存（`Ctrl+S`）。
+
+   若浏览器把 `.user.js` 当纯文本打开而不是触发安装，用第二种方式。
+
+### 验证与更新
+
+- 打开任意竹马法考或众合教育解析页，标签标题开头变成 `v3.17.3 | ...`，即表示脚本已注入；这是脚本自己写入的版本标记。
+- 用户脚本只在页面加载时注入，装好或更新后要刷新一次页面才生效。
+- 更新：Greasy Fork 的同步源会定期拉取仓库，只有 `@version` 递增才会生成新版本；手动安装的可在管理面板点检查更新。
 
 ## 菜单命令
 
@@ -44,7 +70,6 @@
 
 - 分屏宽度记在 `localStorage` 的 `abuSplitPct`，开关状态记在 `abuSplitOff`。`localStorage` 按域隔离，两个站点各记各的。
 - 同时打开多个标签时，其中一个切换状态，另一个要刷新后才跟上。
-- 用户脚本只在页面加载时注入，更新脚本后需刷新页面。
 - 关闭分屏会退回站点原生布局，这是排查视频页播放器异常时的兜底入口，不是卸载脚本。
 
 ## 实现要点
