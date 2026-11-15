@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竹马法考-解析自动展开+界面紧凑磨砂
 // @namespace    abu.zhumavip
-// @version      3.18.0
+// @version      3.18.1
 // @license      MIT
 // @description  ① 解析自动展开；② 左卡收起极窄条；③ 四按钮+统计卡入左卡；④ 分屏：题目(左)|可拖拽分割线|解析(右)——克隆镜像模式(原件留原地给React,面板显示副本,签名变化自动重克隆)；⑤ 打分卡头行并一行+打分提示入口最右；⑥ 视频/音频解析页：真播放器随分屏入驻面板(克隆死件回填原位当占位)，分屏与播放兼得；⑦ 分屏开/关状态记忆：菜单切换后写入 localStorage，刷新或重开解析页沿用上次选择(首次安装默认分屏)；⑧ 面包屑修复：报告页「知识网刷题/章节练习」返回该部门法的练习目录页而非 /w/questionBank(按 URL 参数识别部门法，全科目通用)；⑨ 分屏左栏长题干全文：解除题干/选项区的定高与行数截断，题干自然撑高、下方选项随之下移；并让展开按钮在原件隐藏态仍可点(克隆副本不再空点)；⑩ 深浅色主题：跟随浏览器 prefers-color-scheme 自动切换，菜单可固定浅/深色并记住选择，图片与视频不染色。
 // @author       WorkBuddy & FeiLZX3Km
@@ -115,6 +115,7 @@
 
     // 深色模式要放过的元素：媒体、内联设色、站点自带状态色与强调色
     const KEEP = ':not(img):not(svg):not(video):not(canvas):not(iframe)' +
+      ':not([data-abu-theme-toast])' +
       ':not(' + h('numItem') + '):not(' + h('optWrong') + ')' +
       ':not(' + h('legendItem') + '):not(' + h('railCta') + '):not(a):not(button)';
 
@@ -808,9 +809,12 @@
       html[data-abu-theme="dark"] ${h('analysisBg')} [class~="ahNEf8ynd2DFVN3JTOs6eg=="] {
         background: var(--abu-surface-2) !important;
       }
-      /* 正文文字：整页统一浅色，放过站点状态色区域、链接按钮与媒体 */
+      /* 全站兜底：目录页、练习页等未纳入 HASH 的组件没有白卡规则，
+         只把文字染浅会变成浅字落白底；这里连背景一起兜住。
+         已知卡片与选项块的选择器权重更高，仍用各自的层次色。 */
       html[data-abu-theme="dark"] body *${KEEP} {
         color: var(--abu-text) !important;
+        background-color: var(--abu-bg) !important;
       }
       /* 次要标签、图例、页签与统计说明 */
       html[data-abu-theme="dark"] [class~="IQd43t4GPQb+D6wIpXLqHw=="],
