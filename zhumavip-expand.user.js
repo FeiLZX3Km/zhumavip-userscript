@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         竹马法考-解析自动展开+界面紧凑磨砂
 // @namespace    abu.zhumavip
-// @version      3.17.3
+// @version      3.18.0
 // @license      MIT
-// @description  ① 解析自动展开；② 左卡收起极窄条；③ 四按钮+统计卡入左卡；④ 分屏：题目(左)|可拖拽分割线|解析(右)——克隆镜像模式(原件留原地给React,面板显示副本,签名变化自动重克隆)；⑤ 打分卡头行并一行+打分提示入口最右；⑥ 视频/音频解析页：真播放器随分屏入驻面板(克隆死件回填原位当占位)，分屏与播放兼得；⑦ 分屏开/关状态记忆：菜单切换后写入 localStorage，刷新或重开解析页沿用上次选择(首次安装默认分屏)；⑧ 面包屑修复：报告页「知识网刷题/章节练习」返回该部门法的练习目录页而非 /w/questionBank(按 URL 参数识别部门法，全科目通用)；⑨ 分屏左栏长题干全文：解除题干/选项区的定高与行数截断，题干自然撑高、下方选项随之下移；并让展开按钮在原件隐藏态仍可点(克隆副本不再空点)。
+// @description  ① 解析自动展开；② 左卡收起极窄条；③ 四按钮+统计卡入左卡；④ 分屏：题目(左)|可拖拽分割线|解析(右)——克隆镜像模式(原件留原地给React,面板显示副本,签名变化自动重克隆)；⑤ 打分卡头行并一行+打分提示入口最右；⑥ 视频/音频解析页：真播放器随分屏入驻面板(克隆死件回填原位当占位)，分屏与播放兼得；⑦ 分屏开/关状态记忆：菜单切换后写入 localStorage，刷新或重开解析页沿用上次选择(首次安装默认分屏)；⑧ 面包屑修复：报告页「知识网刷题/章节练习」返回该部门法的练习目录页而非 /w/questionBank(按 URL 参数识别部门法，全科目通用)；⑨ 分屏左栏长题干全文：解除题干/选项区的定高与行数截断，题干自然撑高、下方选项随之下移；并让展开按钮在原件隐藏态仍可点(克隆副本不再空点)；⑩ 深浅色主题：跟随浏览器 prefers-color-scheme 自动切换，菜单可固定浅/深色并记住选择，图片与视频不染色。
 // @author       WorkBuddy & FeiLZX3Km
 // @match        *://www.zhumavip.com/*
 // @match        *://www.zhongheschool.com/*
@@ -113,6 +113,41 @@
   function buildCSS() {
     let css = '';
 
+    // 深色模式要放过的元素：媒体、内联设色、站点自带状态色与强调色
+    const KEEP = ':not(img):not(svg):not(video):not(canvas):not(iframe)' +
+      ':not(' + h('numItem') + '):not(' + h('optWrong') + ')' +
+      ':not(' + h('legendItem') + '):not(' + h('railCta') + '):not(a):not(button)';
+
+    /* ---------- 零、主题变量：浅色沿用站点原值，深色在 html[data-abu-theme="dark"] 下整体换一套 ---------- */
+    css += `
+      :root {
+        --abu-bg: #f5f7fa;
+        --abu-surface: #ffffff;
+        --abu-surface-2: #f7f9fc;
+        --abu-text: #303443;
+        --abu-text-sub: #666f83;
+        --abu-border: #ebebeb;
+        --abu-line: #eef1f6;
+        --abu-accent: #268cff;
+        --abu-tip: rgba(233, 245, 255, 0.88);
+        --abu-bar: #e2e7f0;
+        --abu-wrong: #ffffff;
+      }
+      html[data-abu-theme="dark"] {
+        --abu-bg: #12151a;
+        --abu-surface: #1a1e25;
+        --abu-surface-2: #232833;
+        --abu-text: #dfe4ec;
+        --abu-text-sub: #98a3b5;
+        --abu-border: #2b313c;
+        --abu-line: #2b313c;
+        --abu-accent: #6aa9ff;
+        --abu-tip: rgba(36, 52, 78, 0.88);
+        --abu-bar: #3a4250;
+        --abu-wrong: #1a1e25;
+      }
+    `;
+
     /* ---------- 一、题目内列：撑满父容器（原 860px 写死；YZX9 是 Z19QS73 的内层列） ---------- */
     css += `
       ${h('topicSubject')} {
@@ -190,7 +225,7 @@
     css += `
       ${h('positionTips')} {
         padding: 10px 12px !important;
-        background: rgba(233, 245, 255, 0.88) !important;
+        background: var(--abu-tip) !important;
         -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
         backdrop-filter: blur(12px) saturate(160%) !important;
       }
@@ -258,7 +293,7 @@
         border-radius: 0 !important;
         margin: 10px 0 0 0 !important;
         padding: 10px 0 0 0 !important;
-        border-top: 1px solid #eef1f6 !important;
+        border-top: 1px solid var(--abu-line) !important;
         display: flex !important;
         flex-direction: column !important;
         gap: 10px !important;
@@ -301,7 +336,7 @@
       /* 继续练习：去蓝底药丸，与其他按钮统一为文字风格 */
       ${h('bottomRail')} ${h('railCta')} {
         background: transparent !important;
-        color: #268cff !important;
+        color: var(--abu-accent) !important;
         border-radius: 0 !important;
         width: 100% !important;
         height: auto !important;
@@ -357,8 +392,8 @@
         width: 100% !important;
         margin: 10px 0 0 0 !important;
         padding: 6px 4px !important;
-        background: #fff !important;
-        border: 1px solid #f3f3f3 !important;
+        background: var(--abu-surface) !important;
+        border: 1px solid var(--abu-border) !important;
         border-radius: 6px !important;
         box-shadow: none !important;
         display: flex !important;
@@ -385,7 +420,7 @@
       }
       ${h('leftCard')} ${h('statsCard')} ${h('statsRow')} ${h('numItem')} [class~="IQd43t4GPQb+D6wIpXLqHw=="] {
         font-size: 13px !important;
-        color: #666f83 !important;
+        color: var(--abu-text-sub) !important;
         padding: 0 4px 0 8px !important;
         white-space: nowrap !important;
         flex: none !important;
@@ -418,7 +453,7 @@
       ${h('leftCard')} ${h('statsB_A')} ${h('statsB_A_label')},
       ${h('leftCard')} ${h('statsB_B')} ${h('statsB_B_label')} {
         font-size: 13px !important;
-        color: #666f83 !important;
+        color: var(--abu-text-sub) !important;
         margin-right: 0 !important;
         white-space: nowrap !important;
       }
@@ -459,13 +494,13 @@
       ${h('leftCard')} ${h('statsCard')} > :last-child > * > :first-child {
         order: 2 !important;
         margin-left: auto !important;
-        color: #303443 !important;
+        color: var(--abu-text) !important;
       }
       ${h('leftCard')} ${h('statsCard')} > :last-child > * > :last-child {
         order: 1 !important;
         margin-left: 0 !important;
         margin-right: 8px !important;
-        color: #666f83 !important;
+        color: var(--abu-text-sub) !important;
       }
     `;
     /* ---------- 六C、题卡头行文字并为一行：左组(题源标题+题型标签)原生折两行，改 nowrap 横排 ---------- */
@@ -589,8 +624,8 @@
         border-radius: 4px !important;
       }
       ${h('mainCol')} ${h('optListQ')} ${h('optWrong')} {
-        background: #fff !important;
-        border: 1px solid #ebebeb !important;
+        background: var(--abu-wrong) !important;
+        border: 1px solid var(--abu-border) !important;
       }
     `;
 
@@ -652,7 +687,7 @@
          overflow-y 让栏内容独立滚动（分屏本质） */
       [data-abu-pane="left"],
       [data-abu-pane="right"] {
-        background: #fff !important;
+        background: var(--abu-surface) !important;
         border-radius: 5px !important;
         padding: 16px 24px 40px !important;
         box-sizing: border-box !important;
@@ -688,11 +723,11 @@
         bottom: 0 !important;
         width: 4px !important;
         border-radius: 2px !important;
-        background: #e2e7f0 !important;
+        background: var(--abu-bar) !important;
       }
       [data-abu-pane="bar"]:hover::before,
       body[data-abu-dragging] [data-abu-pane="bar"]::before {
-        background: #268cff !important;
+        background: var(--abu-accent) !important;
       }
       /* 题干内列(YZX9)原生 860px 定宽+overflow-y:scroll 内部滚动列：
          入面板后改自然高度，滚动统一交给面板，避免套娃滚动/裁剪 */
@@ -731,6 +766,118 @@
       }
     `;
 
+    /* ---------- 十一、v3.18.0 深浅色主题：自动跟随浏览器，可在菜单固定浅/深色 ----------
+       只换底色与中性文字，站点自带的对错色、强调色与媒体内容一律放过。
+       主题由 JS 写 html[data-abu-theme]，此处不重复做媒体查询。 */
+    css += `
+      html[data-abu-theme="dark"] { color-scheme: dark !important; }
+      html[data-abu-theme="dark"] body {
+        background: var(--abu-bg) !important;
+        color: var(--abu-text) !important;
+      }
+      /* 页面骨架：已知容器与常见根节点统一深底 */
+      html[data-abu-theme="dark"] #root,
+      html[data-abu-theme="dark"] #app,
+      html[data-abu-theme="dark"] #__next,
+      html[data-abu-theme="dark"] ${h('pageContainer')},
+      html[data-abu-theme="dark"] ${h('mainRow')},
+      html[data-abu-theme="dark"] ${h('topicSubject')},
+      html[data-abu-theme="dark"] ${h('mainCol')},
+      html[data-abu-theme="dark"] ${h('headerWrap')},
+      html[data-abu-theme="dark"] ${h('qNavSticky')} {
+        background-color: var(--abu-bg) !important;
+        color: var(--abu-text) !important;
+      }
+      /* 白卡类：脚本接管过的卡、统计卡、弹卡与分屏面板 */
+      html[data-abu-theme="dark"] ${h('whiteCard')},
+      html[data-abu-theme="dark"] ${h('leftCard')},
+      html[data-abu-theme="dark"] ${h('qCard')},
+      html[data-abu-theme="dark"] ${h('qBlockP')},
+      html[data-abu-theme="dark"] ${h('statsCard')},
+      html[data-abu-theme="dark"] ${h('positionTips')},
+      html[data-abu-theme="dark"] ${h('analysisBg')},
+      html[data-abu-theme="dark"] ${h('tabBar')},
+      html[data-abu-theme="dark"] [data-abu-pane] {
+        background: var(--abu-surface) !important;
+        color: var(--abu-text) !important;
+        border-color: var(--abu-border) !important;
+        box-shadow: none !important;
+      }
+      /* 解析区那两块绝对定位浅蓝底 */
+      html[data-abu-theme="dark"] ${h('analysisBg')} [class~="U71+jXpOscoJ6PF8WCCuIg=="],
+      html[data-abu-theme="dark"] ${h('analysisBg')} [class~="ahNEf8ynd2DFVN3JTOs6eg=="] {
+        background: var(--abu-surface-2) !important;
+      }
+      /* 正文文字：整页统一浅色，放过站点状态色区域、链接按钮与媒体 */
+      html[data-abu-theme="dark"] body *${KEEP} {
+        color: var(--abu-text) !important;
+      }
+      /* 次要标签、图例、页签与统计说明 */
+      html[data-abu-theme="dark"] [class~="IQd43t4GPQb+D6wIpXLqHw=="],
+      html[data-abu-theme="dark"] ${h('legendText')},
+      html[data-abu-theme="dark"] ${h('tabItem')},
+      html[data-abu-theme="dark"] ${h('statsB_A_label')},
+      html[data-abu-theme="dark"] ${h('statsB_B_label')} {
+        color: var(--abu-text-sub) !important;
+      }
+      /* 题卡头行：题型小标签换成深底，题源链接保留强调蓝 */
+      html[data-abu-theme="dark"] ${h('qHead')} ${h('qHeadLeft')} > * {
+        background: var(--abu-surface-2) !important;
+        color: var(--abu-text) !important;
+        border-color: var(--abu-border) !important;
+      }
+      html[data-abu-theme="dark"] ${h('qHead')} a,
+      html[data-abu-theme="dark"] ${h('qHead')} a * {
+        color: var(--abu-accent) !important;
+      }
+      /* 主区选项块：站点给的白底在深色下刺眼，换成次级深底；
+         左卡题号圆点与主区共用 numItem hash，故限定 mainCol 作用域 */
+      html[data-abu-theme="dark"] ${h('mainCol')} ${h('optionItem')},
+      html[data-abu-theme="dark"] ${h('mainCol')} ${h('numItem')} {
+        background: var(--abu-surface-2) !important;
+        border-color: var(--abu-border) !important;
+      }
+      /* 选项、题号、按钮条：只收边框，背景与状态色保持站点原样 */
+      html[data-abu-theme="dark"] ${h('optionItem')},
+      html[data-abu-theme="dark"] ${h('numItem')},
+      html[data-abu-theme="dark"] ${h('bottomRail')} {
+        border-color: var(--abu-border) !important;
+      }
+      html[data-abu-theme="dark"] input,
+      html[data-abu-theme="dark"] textarea,
+      html[data-abu-theme="dark"] select {
+        background: var(--abu-surface-2) !important;
+        color: var(--abu-text) !important;
+        border-color: var(--abu-border) !important;
+      }
+      /* 滚动条随主题 */
+      html[data-abu-theme="dark"] ::-webkit-scrollbar { width: 10px !important; height: 10px !important; }
+      html[data-abu-theme="dark"] ::-webkit-scrollbar-track { background: transparent !important; }
+      html[data-abu-theme="dark"] ::-webkit-scrollbar-thumb {
+        background: var(--abu-bar) !important;
+        border-radius: 6px !important;
+      }
+      /* 题干图片、公式图、视频播放器不做任何染色 */
+      html[data-abu-theme="dark"] img,
+      html[data-abu-theme="dark"] video,
+      html[data-abu-theme="dark"] canvas,
+      html[data-abu-theme="dark"] iframe { filter: none !important; }
+      /* 切换主题时的即时提示 */
+      [data-abu-theme-toast] {
+        position: fixed !important;
+        right: 18px !important;
+        bottom: 18px !important;
+        z-index: 2147483647 !important;
+        padding: 8px 14px !important;
+        border-radius: 6px !important;
+        background: var(--abu-surface-2) !important;
+        color: var(--abu-text) !important;
+        border: 1px solid var(--abu-border) !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, .28) !important;
+        font: 13px/1.5 system-ui, -apple-system, sans-serif !important;
+      }
+    `;
+
     return css;
   }
 
@@ -743,6 +890,49 @@
     }
     styleEl.textContent = buildCSS();
   }
+
+  // ================= 主题：跟随浏览器，可在菜单固定并记忆 =================
+  const THEME_KEY = 'abuThemeMode';
+  const THEME_MODES = ['auto', 'light', 'dark'];
+  const THEME_LABEL = { auto: '跟随浏览器', light: '固定浅色', dark: '固定深色' };
+  const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  let themeMode = readThemeMode();
+
+  function readThemeMode() {
+    try {
+      const v = localStorage.getItem(THEME_KEY);
+      return THEME_MODES.indexOf(v) >= 0 ? v : 'auto';
+    } catch (e) { return 'auto'; }  // 隐私模式禁用存储时静默降级为跟随系统
+  }
+  function writeThemeMode(m) {
+    try { localStorage.setItem(THEME_KEY, m); } catch (e) { /* 静默降级 */ }
+  }
+  function isDark() {
+    return themeMode === 'dark' || (themeMode === 'auto' && !!darkQuery && darkQuery.matches);
+  }
+  function applyTheme() {
+    document.documentElement.setAttribute('data-abu-theme', isDark() ? 'dark' : 'light');
+  }
+  function showThemeToast() {
+    const old = document.querySelector('[data-abu-theme-toast]');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.setAttribute('data-abu-theme-toast', '1');
+    el.textContent = '主题：' + THEME_LABEL[themeMode] +
+      (isDark() ? '（当前深色）' : '（当前浅色）');
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
+  }
+  if (darkQuery) {
+    if (darkQuery.addEventListener) darkQuery.addEventListener('change', applyTheme);
+    else if (darkQuery.addListener) darkQuery.addListener(applyTheme);
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key !== THEME_KEY) return;
+    themeMode = readThemeMode();
+    applyTheme();
+  });
+  applyTheme();
 
   // ================= 文案定位工具（兜底） =================
   function findAllByText(re, maxTextLen = 30, maxChildren = 4) {
@@ -1299,6 +1489,13 @@
       } else {
         discover();
       }
+    });
+    // v3.18：三态循环，切换即时生效并落盘；auto 时由 matchMedia 实时跟随系统
+    GM_registerMenuCommand('切换主题(跟随浏览器/固定浅色/固定深色)', () => {
+      themeMode = THEME_MODES[(THEME_MODES.indexOf(themeMode) + 1) % THEME_MODES.length];
+      writeThemeMode(themeMode);
+      applyTheme();
+      showThemeToast();
     });
   }
 
