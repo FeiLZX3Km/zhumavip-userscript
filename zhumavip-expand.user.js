@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         竹马法考-解析自动展开+界面紧凑磨砂
 // @namespace    abu.zhumavip
-// @version      3.18.0
+// @version      3.20.5
 // @license      MIT
-// @description  ① 解析自动展开；② 左卡收起极窄条；③ 四按钮+统计卡入左卡；④ 分屏：题目(左)|可拖拽分割线|解析(右)——克隆镜像模式(原件留原地给React,面板显示副本,签名变化自动重克隆)；⑤ 打分卡头行并一行+打分提示入口最右；⑥ 视频/音频解析页：真播放器随分屏入驻面板(克隆死件回填原位当占位)，分屏与播放兼得；⑦ 分屏开/关状态记忆：菜单切换后写入 localStorage，刷新或重开解析页沿用上次选择(首次安装默认分屏)；⑧ 面包屑修复：报告页「知识网刷题/章节练习」返回该部门法的练习目录页而非 /w/questionBank(按 URL 参数识别部门法，全科目通用)；⑨ 分屏左栏长题干全文：解除题干/选项区的定高与行数截断，题干自然撑高、下方选项随之下移；并让展开按钮在原件隐藏态仍可点(克隆副本不再空点)；⑩ 深浅色主题：跟随浏览器 prefers-color-scheme 自动切换，菜单可固定浅/深色并记住选择，图片与视频不染色。
+// @description  ① 解析自动展开；② 左卡收起极窄条；③ 四按钮+统计卡入左卡；④ 分屏：题目(左)|可拖拽分割线|解析(右)——克隆镜像模式(原件留原地给React,面板显示副本,签名变化自动重克隆)；⑤ 打分卡头行并一行+打分提示入口最右；⑥ 视频/音频解析页：真播放器随分屏入驻面板(克隆死件回填原位当占位)，分屏与播放兼得；⑦ 分屏开/关状态记忆：菜单切换后写入 localStorage，刷新或重开解析页沿用上次选择(首次安装默认分屏)；⑧ 面包屑修复：报告页「知识网刷题/章节练习」返回该部门法的练习目录页而非 /w/questionBank(按 URL 参数识别部门法，全科目通用)；⑨ 分屏左栏长题干全文：解除题干/选项区的定高与行数截断，题干自然撑高、下方选项随之下移；并让展开按钮在原件隐藏态仍可点(克隆副本不再空点)；⑩ 深浅色主题：跟随浏览器 prefers-color-scheme 自动切换，菜单可固定浅/深色并记住选择，图片与视频不染色；⑪ 深色兜底改为按计算样式成对换底换字，不再整页通配刷黑，修掉目录页黑底黑字；⑫ 悬停高亮接管为柔和深底、刷题页按钮与左栏题号不再粗暴反色、左下角绿色调试水印自动隐藏；⑬ 做题报告页全面放行站点状态色：答题卡对/错红橙标注、选项的已选/错选/未选标记原样保留，深色只接管中性底色与中性文字；⑭ 章节目录页的深蓝链接提成亮蓝、暗字与半透明浅字一并提亮，整页文字可读。
 // @author       WorkBuddy & FeiLZX3Km
 // @match        *://www.zhumavip.com/*
 // @match        *://www.zhongheschool.com/*
@@ -113,11 +113,8 @@
   function buildCSS() {
     let css = '';
 
-    // 深色模式要放过的元素：媒体、内联设色、站点自带状态色与强调色
-    const KEEP = ':not(img):not(svg):not(video):not(canvas):not(iframe)' +
-      ':not([data-abu-theme-toast])' +
-      ':not(' + h('numItem') + '):not(' + h('optWrong') + ')' +
-      ':not(' + h('legendItem') + '):not(' + h('railCta') + '):not(a):not(button)';
+    /* v3.19：不再用 body * 通配刷背景。深色兜底改由 JS 读取计算样式后
+       给元素打 data-abu-dark-bg / data-abu-dark-fg 标记，见 scanDarkTargets()。 */
 
     /* ---------- 零、主题变量：浅色沿用站点原值，深色在 html[data-abu-theme="dark"] 下整体换一套 ---------- */
     css += `
@@ -809,13 +806,44 @@
       html[data-abu-theme="dark"] ${h('analysisBg')} [class~="ahNEf8ynd2DFVN3JTOs6eg=="] {
         background: var(--abu-surface-2) !important;
       }
-      /* 全站兜底：目录页、练习页等未纳入 HASH 的组件没有白卡规则，
-         只把文字染浅会变成浅字落白底；这里连背景一起兜住。
-         已知卡片与选项块的选择器权重更高，仍用各自的层次色。 */
-      html[data-abu-theme="dark"] body *${KEEP} {
-        color: var(--abu-text) !important;
-        background-color: var(--abu-bg) !important;
+      /* v3.19 深色兜底：由 JS 读取计算样式，只给浅底元素与深字元素分别打标，
+         成对换底换字。绝不再用 body * 统一刷背景——那会抹平卡片层次与状态色，
+         而排除项里的文字仍留在深色，结果就是黑底黑字、整页不可读。 */
+      html[data-abu-theme="dark"] [data-abu-dark-bg="1"] {
+        background-color: var(--abu-surface) !important;
+        border-color: var(--abu-border) !important;
       }
+      html[data-abu-theme="dark"] [data-abu-dark-bg="1"][data-abu-dark-img="1"] {
+        background-image: none !important;
+      }
+      html[data-abu-theme="dark"] [data-abu-dark-fg="1"] {
+        color: var(--abu-text) !important;
+      }
+      /* 章节名等深蓝链接提成亮蓝，落进深底也能读 */
+      html[data-abu-theme="dark"] [data-abu-dark-link="1"] {
+        color: var(--abu-accent) !important;
+      }
+      /* 悬停高亮：站点把白底写在 :hover 上，静态扫描读不到这一态。
+         鼠标进入时由 JS 打标，换成略亮的深底，高亮仍可辨但不刺眼。 */
+      html[data-abu-theme="dark"] [data-abu-dark-hover="1"]:hover {
+        background-color: var(--abu-surface-2) !important;
+        background-image: none !important;
+      }
+      html[data-abu-theme="dark"] [data-abu-dark-bg="1"]:hover {
+        background-color: var(--abu-surface-2) !important;
+      }
+      /* 左栏题号方块收成中性深底，不再留蓝底红字 */
+      html[data-abu-theme="dark"] [data-abu-dark-num="1"] {
+        background: var(--abu-surface-2) !important;
+        color: var(--abu-text) !important;
+        border-color: var(--abu-border) !important;
+      }
+      /* 题号若本身是图片，压成中性灰阶，不再留刺眼的蓝底红字 */
+      html[data-abu-theme="dark"] img[data-abu-dark-num="1"] {
+        filter: grayscale(1) brightness(1.35) contrast(0.9) !important;
+      }
+      /* 页面角落的绿色调试统计水印 */
+      html[data-abu-theme="dark"] [data-abu-hide="1"] { display: none !important; }
       /* 次要标签、图例、页签与统计说明 */
       html[data-abu-theme="dark"] [class~="IQd43t4GPQb+D6wIpXLqHw=="],
       html[data-abu-theme="dark"] ${h('legendText')},
@@ -834,20 +862,15 @@
       html[data-abu-theme="dark"] ${h('qHead')} a * {
         color: var(--abu-accent) !important;
       }
-      /* 主区选项块：站点给的白底在深色下刺眼，换成次级深底；
-         左卡题号圆点与主区共用 numItem hash，故限定 mainCol 作用域 */
-      html[data-abu-theme="dark"] ${h('mainCol')} ${h('optionItem')},
-      html[data-abu-theme="dark"] ${h('mainCol')} ${h('numItem')} {
-        background: var(--abu-surface-2) !important;
-        border-color: var(--abu-border) !important;
-      }
+      /* 选项块与题号绝不刷底：站点的对/错/未选是用红橙绿底色与圆点标出来的，
+         统一换深底会把这层语义抹平（v3.20.4 起完全放行，只收边框）。 */
       /* 选项、题号、按钮条：只收边框，背景与状态色保持站点原样 */
       html[data-abu-theme="dark"] ${h('optionItem')},
       html[data-abu-theme="dark"] ${h('numItem')},
       html[data-abu-theme="dark"] ${h('bottomRail')} {
         border-color: var(--abu-border) !important;
       }
-      html[data-abu-theme="dark"] input,
+      html[data-abu-theme="dark"] input:not([type="radio"]):not([type="checkbox"]),
       html[data-abu-theme="dark"] textarea,
       html[data-abu-theme="dark"] select {
         background: var(--abu-surface-2) !important;
@@ -915,8 +938,185 @@
     return themeMode === 'dark' || (themeMode === 'auto' && !!darkQuery && darkQuery.matches);
   }
   function applyTheme() {
-    document.documentElement.setAttribute('data-abu-theme', isDark() ? 'dark' : 'light');
+    const mode = isDark() ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-abu-theme', mode);
+    // 主题变化后旧标记必须重算：清掉重扫，避免读到被覆盖后的颜色
+    scheduleDarkScan(true);
   }
+
+  // ---------- v3.19 深色兜底：按计算样式成对换底换字 ----------
+  // 旧版用 body * 把所有元素背景刷成近黑，却把 a / button / 状态色里的文字
+  // 留在深色，目录页因此变成黑底黑字。这里只挑"浅底"与"深字"分别打标，
+  // 且深字元素的浅底祖先一并换深，保证两者永远成对。
+  // 选项块、题号圆点、图例承载对/错/未选语义，深色一律放行，只接管中性色
+  const STATE_KEEP = [h('optionItem'), h('numItem'), h('optWrong'), h('legendItem'),
+    h('railCta')].join(',');
+  const DARK_SKIP = 'img,svg,video,canvas,iframe,script,style,' +
+    'input[type="radio"],input[type="checkbox"],' + STATE_KEEP + ',' +
+    '[data-abu-theme-toast],[data-abu-debug]';
+  function pageKind() {
+    if (/exercise/i.test(location.pathname)) return 'exercise';
+    if (/analysis/i.test(location.pathname)) return 'report';
+    return 'other';
+  }
+  let darkSeen = new WeakSet();
+  let darkScanTheme = '';
+  let darkScanTimer = null;
+
+  function parseRGB(s) {
+    const m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))?/i.exec(s || '');
+    if (!m) return null;
+    return { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+  }
+  function bright(c) { return (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255; }
+  function vivid(c) { return Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) > 55; }
+  function neutral(c) { return Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) <= 14; }
+  function isLightBg(c) { return !!c && c.a > 0.35 && bright(c) > 0.72 && neutral(c); }
+  // 报告页的选项底色是浅红/浅橙/浅绿，色偏很小但承载对错语义，必须严格放行；
+  // 做题页与目录页的浅灰底只需换成深底，沿用宽松判定，否则整页会退回白底。
+  function isLightBgFor(c, kind) {
+    if (!c || c.a <= 0.35 || bright(c) <= 0.72) return false;
+    return kind === 'report' ? neutral(c) : !vivid(c);
+  }
+  function hasOwnText(el) {
+    for (let i = 0; i < el.childNodes.length; i++) {
+      const n = el.childNodes[i];
+      if (n.nodeType === 3 && n.textContent.trim()) return true;
+    }
+    return false;
+  }
+  function clearDarkMarks() {
+    const list = document.querySelectorAll('[data-abu-dark-bg],[data-abu-dark-fg],[data-abu-dark-img],[data-abu-dark-num],[data-abu-dark-link],[data-abu-hide]');
+    for (let i = 0; i < list.length; i++) {
+      list[i].removeAttribute('data-abu-dark-bg');
+      list[i].removeAttribute('data-abu-dark-fg');
+      list[i].removeAttribute('data-abu-dark-img');
+      list[i].removeAttribute('data-abu-dark-num');
+      list[i].removeAttribute('data-abu-dark-link');
+      list[i].removeAttribute('data-abu-dark-hover');
+      list[i].removeAttribute('data-abu-hide');
+    }
+  }
+  function scheduleDarkScan(force) {
+    if (force) { clearDarkMarks(); darkSeen = new WeakSet(); darkScanTheme = ''; }
+    if (darkScanTimer) return;
+    darkScanTimer = setTimeout(() => { darkScanTimer = null; scanDarkTargets(); }, 60);
+  }
+  function scanDarkTargets() {
+    const mode = document.documentElement.getAttribute('data-abu-theme');
+    if (mode !== 'dark' || !document.body) {
+      if (darkScanTheme !== mode) { clearDarkMarks(); darkScanTheme = mode; darkSeen = new WeakSet(); }
+      return;
+    }
+    if (darkScanTheme !== 'dark') { darkSeen = new WeakSet(); darkScanTheme = 'dark'; }
+    const kind = pageKind();
+    const nodes = document.body.querySelectorAll('*');
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      if (darkSeen.has(el)) continue;
+      darkSeen.add(el);
+      if (el.matches && el.matches(DARK_SKIP)) continue;
+      const cs = getComputedStyle(el);
+      const bg = parseRGB(cs.backgroundColor);
+      if (isLightBgFor(bg, kind)) {
+        el.setAttribute('data-abu-dark-bg', '1');
+        if (cs.backgroundImage && cs.backgroundImage !== 'none') el.setAttribute('data-abu-dark-img', '1');
+      }
+      // 刷题页是老式组件：顶部页签、底栏按钮、左栏题号方块的底色都画在
+      // background-image 上，只判 backgroundColor 会漏，浅字落浅图就看不见。
+      // 只接管中等尺寸的控件类元素，放过整页装饰图与独立的 <img> 图标。
+      if (kind === 'exercise' && cs.backgroundImage && cs.backgroundImage !== 'none' && !isLightBgFor(bg, kind) && !(bg && vivid(bg))) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 16 && r.width < 420 && r.height > 12 && r.height < 70 &&
+            !(r.left > innerWidth * 0.72 && r.top < 120)) {
+          el.setAttribute('data-abu-dark-bg', '1');
+          el.setAttribute('data-abu-dark-img', '1');
+        }
+      }
+      // 左栏题号方块：站点把状态色铺成蓝底红字，有的还是一整张小图片。
+      // 按"左侧 + 小尺寸"定点接管，连内部的 img 一起打标，不放过图片形态。
+      {
+        const r = el.getBoundingClientRect();
+        if (kind === 'exercise' && r.width >= 12 && r.width <= 64 && r.height >= 10 && r.height <= 46 &&
+            r.right < 320 && r.top > 0 && r.top < innerHeight) {
+          el.setAttribute('data-abu-dark-num', '1');
+          const imgs = el.querySelectorAll('img');
+          for (let k = 0; k < imgs.length; k++) imgs[k].setAttribute('data-abu-dark-num', '1');
+        }
+      }
+      if (hasOwnText(el)) {
+        const fg = parseRGB(cs.color);
+        // 左下角绿色调试统计水印：v3.5 / 内联 / 底栏 / 标记数字
+        const txt = (el.textContent || '').trim();
+        if (fg && fg.g > fg.r + 40 && fg.g > fg.b + 40 && txt.length > 0 && txt.length < 48 &&
+            /(?:v?\d+\.\d+|内联|底栏|标记\s*\d)/.test(txt)) {
+          const r = el.getBoundingClientRect();
+          if (r.top > innerHeight * 0.8 && r.left < innerWidth * 0.35 && parseFloat(cs.fontSize) <= 13) {
+            el.setAttribute('data-abu-hide', '1');
+          }
+        }
+        // 站点把有报告的章节名写成深蓝链接，深色下落进背景看不见：
+        // 单独提成亮蓝，保留"这是链接"的语义，不做粗暴反色。
+        const blueLink = fg && fg.a > 0.3 && fg.b > fg.r + 25 &&
+          fg.b > fg.g + 8 && bright(fg) < 0.65;
+        // 目录页没有对错状态色，文字判定放宽：暗字与半透明浅字一并提亮；
+        // 做题页/报告页维持原判定，避免抹掉红橙状态标注。
+        const darkText = fg && fg.a > 0.3 && (kind === 'other'
+          ? (bright(fg) < 0.62 || fg.a < 0.65) && !(fg.r > fg.g + 40 && fg.r > fg.b + 40)
+          : bright(fg) < 0.55 && !vivid(fg));
+        if (blueLink) {
+          el.setAttribute('data-abu-dark-link', '1');
+        } else if (darkText) {
+          el.setAttribute('data-abu-dark-fg', '1');
+          // 自身背景透明时，向上把最近的浅底祖先一并换深，杜绝浅字落白底
+          if (!isLightBgFor(bg, kind)) {
+            let p = el.parentElement, hop = 0;
+            while (p && p !== document.body && hop++ < 10) {
+              const pcs = getComputedStyle(p);
+              if (isLightBgFor(parseRGB(pcs.backgroundColor), kind)) {
+                p.setAttribute('data-abu-dark-bg', '1');
+                if (pcs.backgroundImage && pcs.backgroundImage !== 'none') p.setAttribute('data-abu-dark-img', '1');
+                break;
+              }
+              p = p.parentElement;
+            }
+          }
+        }
+      }
+    }
+  }
+  // 悬停态是静态扫描看不见的：站点在 :hover 上把整行刷成白底，
+  // 浅字落上去就成了白块。鼠标进入时实时读计算样式，给该行补 hover 标记。
+  // 每次都重判，避免 CSS 过渡中途的浅灰被 WeakSet 漏掉；
+  // 只打 hover 专用标记，不写 data-abu-dark-bg，离开悬停后行背景仍是原样。
+  let hoverTimer = null;
+  let hoverTarget = null;
+  function scanHoverChain(target) {
+    if (!target || !document.body) return;
+    const kind = pageKind();
+    let n = target, hop = 0;
+    while (n && n !== document.body && hop++ < 5) {
+      if (n.nodeType === 1 && !(n.matches && n.matches(DARK_SKIP))) {
+        const cs = getComputedStyle(n);
+        const c = parseRGB(cs.backgroundColor);
+        if (c && c.a > 0.5 && bright(c) > 0.62 &&
+            (kind === 'report' ? neutral(c) : !vivid(c))) n.setAttribute('data-abu-dark-hover', '1');
+        else n.removeAttribute('data-abu-dark-hover');
+        if (hasOwnText(n)) {
+          const fg = parseRGB(cs.color);
+          if (fg && fg.a > 0.3 && bright(fg) < 0.55 && !vivid(fg)) n.setAttribute('data-abu-dark-fg', '1');
+        }
+      }
+      n = n.parentElement;
+    }
+  }
+  document.addEventListener('mouseover', (e) => {
+    if (document.documentElement.getAttribute('data-abu-theme') !== 'dark') return;
+    hoverTarget = e.target;
+    if (hoverTimer) return;
+    hoverTimer = setTimeout(() => { hoverTimer = null; scanHoverChain(hoverTarget); }, 16);
+  }, true);
+
   function showThemeToast() {
     const old = document.querySelector('[data-abu-theme-toast]');
     if (old) old.remove();
@@ -1464,6 +1664,7 @@
     timer = setTimeout(() => {
       timer = null;
       try { expandAll(); discover(); } catch (e) { /* noop */ }
+      try { scanDarkTargets(); } catch (e) { /* noop */ }
     }, DEBOUNCE_MS);
   }
 
@@ -1504,7 +1705,10 @@
   }
 
   injectStyle();
-  setTimeout(() => { try { expandAll(); discover(); } catch (e) { /* noop */ } }, 1200);
+  setTimeout(() => {
+    try { expandAll(); discover(); } catch (e) { /* noop */ }
+    try { scanDarkTargets(); } catch (e) { /* noop */ }
+  }, 1200);
 })();
 
 /* ==========================================================================
